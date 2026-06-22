@@ -1,5 +1,7 @@
 ﻿using OpenTK.Windowing.Desktop;
 
+namespace gl;
+
 public class Program {
     public static void Main(string[] args)
     {

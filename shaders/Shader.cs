@@ -1,15 +1,20 @@
+using System.Runtime.InteropServices.JavaScript;
 using OpenTK.Graphics.OpenGL4;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
-public class Shader
+using StbImageSharp;
+
+namespace gl.shaders;
+
+public sealed class Shader : IDisposable
 {
-    private int _handle;
-    private string _vertexPath;
-    private string _fragmentPath;
-    private int _vertexShader; 
-    private int _fragmentShader;
+    private int Handle { get; set; }
     
+    private readonly string _vertexPath;
+    private readonly string _fragmentPath;
+    private int _vertexShader;
+    private int _fragmentShader;
+    private bool _isDisposed;
+
+
     public Shader(string vertexPath, string fragmentPath)
     {
         _vertexPath = (vertexPath);
@@ -17,20 +22,18 @@ public class Shader
         Compile();
     }
 
-    public void Compile()
+    private void Compile()
     {
-        var vertexShaderSource =  File.ReadAllText(_vertexPath);
-        var fragmentShaderSource =  File.ReadAllText(_fragmentPath);
-        GL.CreateShader(ShaderType.VertexShader);
-//        var x  = GL.CreateShader(ShaderType.VertexShader);        
+        var vertexShaderSource = File.ReadAllText(_vertexPath);
+        var fragmentShaderSource = File.ReadAllText(_fragmentPath);
         _vertexShader = GL.CreateShader(ShaderType.VertexShader);
         GL.ShaderSource(_vertexShader, vertexShaderSource);
 
         _fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
         GL.ShaderSource(_fragmentShader, fragmentShaderSource);
-        
+
         GL.CompileShader(_vertexShader);
-        
+
         GL.GetShader(_vertexShader, ShaderParameter.CompileStatus, out int shaderStatus);
         if (shaderStatus == 0)
         {
@@ -46,47 +49,44 @@ public class Shader
             string infoLog = GL.GetShaderInfoLog(_fragmentShader);
             Console.WriteLine(infoLog);
         }
-        _handle = GL.CreateProgram();
 
-        GL.AttachShader(_handle, _vertexShader);
-        GL.AttachShader(_handle, _fragmentShader);
+        Handle = GL.CreateProgram();
 
-        GL.LinkProgram(_handle);
+        GL.AttachShader(Handle, _vertexShader);
+        GL.AttachShader(Handle, _fragmentShader);
 
-        GL.GetProgram(_handle, GetProgramParameterName.LinkStatus, out int programStatus);
+        GL.LinkProgram(Handle);
+
+        GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out int programStatus);
         if (programStatus == 0)
         {
-            string infoLog = GL.GetProgramInfoLog(_handle);
+            string infoLog = GL.GetProgramInfoLog(Handle);
             Console.WriteLine(infoLog);
         }
-        GL.DetachShader(_handle, _vertexShader);
-        GL.DetachShader(_handle, _fragmentShader);
+        // clean up
+        GL.DetachShader(Handle, _vertexShader);
+        GL.DetachShader(Handle, _fragmentShader);
         GL.DeleteShader(_fragmentShader);
         GL.DeleteShader(_vertexShader);
-
     }
 
     public void Use()
     {
-        GL.UseProgram(_handle);
+        GL.UseProgram(Handle);
     }
- 
 
-    private bool disposedValue = false;
-
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_isDisposed)
         {
-            GL.DeleteProgram(_handle);
+            GL.DeleteProgram(Handle);
 
-            disposedValue = true;
+            _isDisposed = true;
         }
     }
-
     ~Shader()
     {
-        if (disposedValue == false)
+        if (!_isDisposed)
         {
             Console.WriteLine("GPU Resource leak! Did you forget to call Dispose()?");
         }
@@ -96,7 +96,5 @@ public class Shader
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
-
 }

@@ -8,7 +8,7 @@ public class Texture
 {
     private readonly string _path;
     private int Handle { get; set; }
-
+    // test
     public Texture(string path)
     {
         Handle = GL.GenTexture();

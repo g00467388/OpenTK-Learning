@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices.JavaScript;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using StbImageSharp;
 
 namespace gl.shaders;
@@ -73,6 +74,10 @@ public sealed class Shader : IDisposable
     public void Use()
     {
         GL.UseProgram(Handle);
+        int location = GL.GetUniformLocation(Handle, "transform");
+        // Transform position on X axis by +1
+        Matrix4 transformation = Matrix4.CreateTranslation(new Vector3(1.0f, 0.0f, 0.0f));
+        GL.UniformMatrix4(location, true, ref transformation);
     }
 
     private void Dispose(bool disposing)

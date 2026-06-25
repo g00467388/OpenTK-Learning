@@ -71,13 +71,15 @@ public sealed class Shader : IDisposable
         GL.DeleteShader(_vertexShader);
     }
 
+    public void SetMatrix4(string name, Matrix4 matrix)
+    {
+        int location = GL.GetUniformLocation(Handle, name); 
+        GL.UniformMatrix4(location, true, ref matrix);
+    }
+    
     public void Use()
     {
         GL.UseProgram(Handle);
-        int location = GL.GetUniformLocation(Handle, "transform");
-        // Transform position on X axis by +1
-        Matrix4 transformation = Matrix4.CreateTranslation(new Vector3(1.0f, 0.0f, 0.0f));
-        GL.UniformMatrix4(location, true, ref transformation);
     }
 
     private void Dispose(bool disposing)

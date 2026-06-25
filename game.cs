@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using gl.shaders;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -9,8 +10,12 @@ namespace gl;
 
 public class Game : GameWindow
 {
-    private readonly Stopwatch _time = new Stopwatch();
+    private double _time;
     private int _vertexBufferObject;
+    private Matrix4 _projection;
+    private Matrix4 _view;
+    private Matrix4 _model;
+
     private int _vertexArrayObject;
     private Shader? _shader;
     private Texture? _texture;
@@ -42,7 +47,9 @@ public class Game : GameWindow
     protected override void OnLoad()
     {
         base.OnLoad();
-        _time.Start();
+        GL.ClearColor(0.6f, 0.4f, 0.6f, 1.0f);
+        GL.Enable(EnableCap.DepthTest);
+        
         _vertexBufferObject = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
         GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * _vertices.Length, _vertices,
@@ -67,13 +74,19 @@ public class Game : GameWindow
 
      
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, _borderColour);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToBorder);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToBorder);
+
         // TODO fix weird file path location 
         _shader = new Shader("../../../shaders/shader.vert", "../../../shaders/shader.frag");
         _shader.Use();
 
         _texture = new Texture("../../../Resources/container.jpg");
-  
+        _texture?.Use();
         
+        _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
+        _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45f), Size.X / (float) Size.Y, 0.1f, 100.0f);
+
     }
 
 
@@ -101,12 +114,15 @@ public class Game : GameWindow
     protected override void OnRenderFrame(FrameEventArgs e)
     {
         base.OnRenderFrame(e);
+        _time += e.Time * 6;
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-        GL.BindVertexArray(_vertexArrayObject);
-        GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+        _model = Matrix4.Identity * Matrix4.CreateRotationX((float)MathHelper.DegreesToRadians(_time));
         
-        _texture?.Use();
+        GL.BindVertexArray(_vertexArrayObject);
+        _shader.SetMatrix4("projection", _projection);
+        _shader.SetMatrix4("view", _view);
+        _shader.SetMatrix4("model", _model);
+        GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
         
         SwapBuffers();
     }
